@@ -1,0 +1,42 @@
+1. 把所有菌株的蛋白合并成一个文件I.pep（4AO1_3084基因ID例子）把所有的菌株核酸合并成I.nuc
+   cat *.faa > I.pep
+   cat *.ffn > I.nuc
+
+2. cd-hit
+   cd-hit -i I.pep -o I.pep.nr -c 0.5 -n 2 -G 0 -T 6 -t 0 -aS 0.9 -aL 0.9 -g 1 -M 0 -d 0
+#   cd-hit -i I.nuc -o I.nuc.nr -c 0.5 -n 2 -G 0 -T 6 -t 0 -aS 0.9 -aL 0.9 -g 1 -M 0 -d 0
+
+3. 上一步产出3个文件，用到其中的的I.pep.nr.clstr，使用ortholog_core.pl来提取单拷贝的核心蛋白
+   perl ortholog_core.pl -i I.pep.nr.clstr -t 199 -o core.pep.list
+
+4. 使用extract_ortholog_cluster_seq.pl根据3得到的core.pep.list提取蛋白及核酸，到输出目录中
+   perl extract_ortholog_cluster_seq.pl -i I.pep -l core.pep.list -o faa
+   perl extract_ortholog_cluster_seq.pl -i I.nuc -l core.pep.list -o ffn
+
+5. 进入蛋白的文件夹，run_mafft.pl输出.aln
+   cp run_mafft.pl faa
+   cd faa
+   unset MAFFT_BINARIES
+   perl run_mafft.pl 
+   cd ..
+
+6. perl run_pal2nal.pl –p 含有蛋白比对结果的文件夹 –d 核酸的文件夹 –c 回译后的文件夹（文件后缀codon.aln）
+   修改路径
+   perl run_pal2nal.pl -p faa -d ffn -c faa2ffn
+
+7. 在回译后的文件夹里运行perl catfastatrail.pl得到一系列后缀为.fas的文件
+   cp catfastatrail.pl faa2ffn
+   cd faa2ffn
+   perl catfastatrail.pl
+
+8. perl catfasta2phyml.pl -f *.fas > out.fasta串联后的序列
+   cp ../catfasta2phyml.pl ./
+   perl catfasta2phyml.pl -f *.fas > ALL.core.fasta
+
+9. 运行snp-sites
+   snp-sites -o ALL.core.snp.fasta ALL.core.fasta
+
+10. fasttreeMP -nt -gtr ALL.core.snp.fasta > ALL.core.snp.tre
+
+
+
